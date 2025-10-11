@@ -9,6 +9,8 @@ export default createStore({
     timer: 60, // seconds
     gameOver: false,
     gameStarted: false,
+    gameWon: false,
+
 
     // === GAME OBJECTS ===
     fruits: [], // active fruits
@@ -40,6 +42,7 @@ export default createStore({
       state.timer = state.levelTimers[1]
       state.fruits = []
       state.bombs = []
+      state.gameWon = false;
     },
 
     resetGame(state) {
@@ -51,6 +54,7 @@ export default createStore({
       state.bombs = []
       state.gameOver = false
       state.gameStarted = false
+      state.gameWon = false;
     },
 
     addScore(state, points) {
@@ -66,15 +70,20 @@ export default createStore({
 
 
     nextLevel(state) {
-      if (state.level < 3) {
-        state.level++
-        state.timer = state.levelTimers[state.level]
-        state.fruits = []
-        state.bombs = []
-      } else {
-        state.gameOver = true
-      }
-    },
+  if (state.level < 3) {
+    state.level++;
+    if (state.level === 3) state.lives = 1; 
+    state.score = 0;
+    state.timer = state.levelTimers[state.level];
+    state.fruits = [];
+    state.bombs = [];
+  } else {
+    // 🎉 Player finished all levels
+    state.gameWon = true;
+    state.gameOver = false; // don't show game over
+  }
+},
+
 
   
     spawnFruit(state) {
