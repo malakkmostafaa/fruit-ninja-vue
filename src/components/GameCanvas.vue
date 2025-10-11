@@ -44,6 +44,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useStore } from "vuex";
 
 const store = useStore();
+const emojiIcons = ref(["🍎","🍊","🍉","🍌","🍓","🍒","🍍"]);
 const fruits = computed(() => store.state.fruits);
 const bombs = computed(() => store.state.bombs);
 const level = computed(() => store.state.level);
@@ -149,7 +150,7 @@ function spawnFruit() {
   // Add small random variation so not all fly identically
   const vyVariation = vy - Math.random() * 2;
 
-  const icons = ["🍎", "🍊", "🍉", "🍌", "🍓", "🍒", "🍍"];
+  const icons = emojiIcons.value;
   const icon = icons[Math.floor(Math.random() * icons.length)];
 
   store.state.fruits.push({
@@ -220,6 +221,18 @@ function nextLevel() {
 }
 
 onMounted(() => {
+    // 🛰️ Simple API fetch for emoji icons
+fetch('/emojis.json')
+  .then(r => r.json())
+  .then(data => {
+    if (Array.isArray(data.icons) && data.icons.length) {
+      emojiIcons.value = data.icons;
+    }
+  })
+  .catch(() => {
+    // if fetch fails, fallback icons stay
+  });
+
   startLevel();
 
   // 🖱️ Track cursor position for blade effect
@@ -237,8 +250,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ====== Playful arcade vibe with pure CSS (no logic changes) ====== */
-
 .game-wrapper {
   display: flex;
   flex-direction: column;
@@ -246,151 +257,141 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-/* Level pill with glow */
+/* lacquered level pill */
 .level-banner {
-  background: conic-gradient(from 120deg, #00cec9, #0984e3 40%, #00cec9 80%);
-  color: #fff;
-  padding: 10px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+  color: #23180f;
+  padding: 8px 20px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 1.05rem;
-  letter-spacing: .3px;
-  box-shadow: 0 10px 24px rgba(9,132,227,.25), inset 0 0 0 1px rgba(255,255,255,.18);
+  box-shadow: 0 14px 30px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.35);
 }
 
-/* Canvas frame: neon bezel + soft gradient arena */
+/* >>> Cutting board background <<< */
 .game-canvas {
   position: relative;
   width: 800px;
   height: 600px;
-  background:
-    radial-gradient(900px 600px at 20% -10%, rgba(9,132,227,.14), transparent 60%),
-    radial-gradient(800px 500px at 120% 110%, rgba(0,206,201,.13), transparent 60%),
-    linear-gradient(180deg, #141821, #0f141c 55%, #0b1018);
-  border: 4px solid transparent;
-  border-radius: 20px;
+
+  /* ✅ Correct public path */
+  background-image: url('/desktop-wallpaper-fruit-ninja.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 4px solid #4b2e05;
+  border-radius: 18px;
   overflow: hidden;
   cursor: none;
   user-select: none;
-  box-shadow:
-    0 24px 50px rgba(0,0,0,.45),
-    inset 0 0 0 1px rgba(255,255,255,.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Neon rim */
-.game-canvas::before{
-  content:'';
-  position:absolute; inset:-3px;
-  border-radius: 22px;
-  background: linear-gradient(90deg,#74b9ff,#00cec9,#74b9ff);
-  filter: blur(8px);
-  opacity:.45;
-  z-index:0;
-  pointer-events:none;
-}
-
-/* Fruit/Bomb emoji styling (keeps your absolute positions) */
-.fruit,
-.bomb {
+/* --- VIGNETTE / BEVEL SHADOW --- */
+.game-canvas::after {
+  content: "";
   position: absolute;
-  font-size: 2.6rem;        /* slightly larger, easier to click */
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 50%, transparent 58%, rgba(0, 0, 0, .45));
+}
+
+/* Fruits and bombs */
+.fruit, .bomb {
+  position: absolute;
+  font-size: 2.6rem;
   transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
   transition: transform .05s linear;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.35));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .35));
   z-index: 2;
 }
 
-/* Give fruits a lively wobble (subtle) */
 .fruit {
-  animation: wobble 1.2s ease-in-out infinite;
-}
-@keyframes wobble {
-  0%,100% { --rot: -4deg; }
-  50%     { --rot:  4deg; }
+  animation: wob .95s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(255,255,255,.2), 0 0 8px rgba(255,120,60,.18);
 }
 
-/* Bombs: danger glow */
-.bomb{
-  text-shadow: 0 0 10px rgba(255,77,109,.55), 0 0 20px rgba(255,77,109,.35);
-  animation: pulse 1.3s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100% { filter: drop-shadow(0 6px 14px rgba(255,77,109,.3)); transform: translate(-50%,-50%) scale(1); }
-  50%     { filter: drop-shadow(0 10px 22px rgba(255,77,109,.45)); transform: translate(-50%,-50%) scale(1.06); }
+@keyframes wob { 0%,100%{ --rot:-5deg } 50%{ --rot:5deg } }
+
+.bomb {
+  animation: pulse 1.1s ease-in-out infinite;
+  text-shadow: 0 0 14px rgba(255,77,109,.55), 0 0 26px rgba(255,77,109,.35);
 }
 
-/* Level Complete overlay — glassy card */
+@keyframes pulse {
+  0%,100% { transform: translate(-50%,-50%) scale(1) }
+  50% { transform: translate(-50%,-50%) scale(1.06) }
+}
+
+/* Soft shadow */
+.fruit::after, .bomb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 14px;
+  transform: translate(-50%, calc(50% + 22px));
+  background: radial-gradient(closest-side, rgba(0,0,0,.45), transparent 70%);
+  filter: blur(2px);
+  opacity: .32;
+  pointer-events: none;
+}
+
+/* Overlay */
 .overlay {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(700px 500px at 50% 30%, rgba(116,185,255,.18), transparent 60%),
-    rgba(0,0,0,.55);
-  color: white;
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
+  z-index: 3;
+  color: #1c140e;
+  background:
+    radial-gradient(700px 500px at 50% 30%, rgba(255,160,80,.15), transparent 60%),
+    rgba(0,0,0,.55);
+  backdrop-filter: blur(6px) saturate(1.05);
   font-size: 1.8rem;
   animation: fadeIn .35s ease;
-  z-index: 3;
 }
 
-.overlay > *{
-  text-align:center;
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
-  border: 1px solid rgba(255,255,255,.12);
+.overlay > * {
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  border: 1px solid rgba(0,0,0,.16);
   padding: 18px 28px;
   border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(0,0,0,.4);
-}
-
-.overlay h2 {
-  margin: 0 0 10px;
-  letter-spacing: .4px;
+  box-shadow: 0 22px 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.2);
 }
 
 .overlay button {
-  background: linear-gradient(180deg, #55efc4, #00cec9);
-  border: none;
-  padding: .8rem 1.5rem;
-  font-size: 1.05rem;
+  background: linear-gradient(180deg, #39c46f, #2aa85d);
+  color: #0b0f14;
+  font-weight: 800;
+  border: 0;
+  padding: .85rem 1.6rem;
   border-radius: 12px;
   margin-top: 12px;
   cursor: pointer;
-  font-weight: 800;
-  color: #0b0f14;
-  box-shadow: 0 10px 26px rgba(0,206,201,.35), inset 0 0 0 1px rgba(0,0,0,.25);
+  box-shadow: 0 12px 28px rgba(42,168,93,.35), inset 0 0 0 1px rgba(0,0,0,.25);
   transition: transform .12s ease, filter .12s ease;
 }
-.overlay button:hover { transform: translateY(-1px); filter: saturate(1.08) }
-.overlay button:active{ transform: translateY(1px) }
 
-/* Custom cursor “energy blade” */
+.overlay button:hover { transform: translateY(-1px); filter: saturate(1.06); }
+.overlay button:active { transform: translateY(1px); }
+
 .cursor-blade {
   position: absolute;
+  z-index: 4;
   width: 28px;
   height: 28px;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(255,255,255,.95), rgba(255,255,255,.55) 35%, rgba(129,236,236,.45) 60%, rgba(0,0,0,0) 72%);
-  border: 2px solid rgba(0,206,201,.9);
-  border-radius: 50%;
   pointer-events: none;
   transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.7);
+  background: radial-gradient(circle at 55% 45%, rgba(255,255,255,.95), rgba(255,255,255,.55) 35%, rgba(120,180,255,.45) 60%, transparent 72%);
   mix-blend-mode: screen;
-  box-shadow:
-    0 0 18px rgba(0,206,201,.9),
-    0 0 40px rgba(0,206,201,.45);
-  z-index: 4;
+  box-shadow: 0 0 22px rgba(220,240,255,.7), 0 0 44px rgba(180,210,255,.35);
 }
 
-/* soft wake-up trail on movement (no JS needed) */
-.cursor-blade::after{
-  content:'';
-  position:absolute;
-  inset: -18px;
-  border-radius:50%;
-  background: radial-gradient(circle at 50% 50%, rgba(0,206,201,.25), transparent 70%);
-  filter: blur(10px);
-  opacity: .35;
-}
-
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
