@@ -136,4 +136,8 @@ function startGame() {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
+button:hover{ transform: translateY(-1px); filter:saturate(1.06) }
+button:active{ transform: translateY(1px) }
 </style>
+
+

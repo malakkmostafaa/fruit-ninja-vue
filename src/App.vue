@@ -26,22 +26,20 @@ const gameOver = computed(() => store.state.gameOver)
 
 <style scoped>
 .app-container {
-  text-align: center;
   min-height: 100vh;
-
-  overflow: hidden;
-
-  /* playful gradient sky */
-  
-  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  background: linear-gradient(to bottom, #fff6e5, #ffeae0);
+  padding: 2rem;
 }
-
 .title {
-  font-family: system-ui, "Comic Sans MS", "Comic Sans", ui-rounded, sans-serif;
-  font-size: clamp(28px, 4.2vw, 44px);
-  color: #2d3436;
-  margin: 10px 0 14px;
-  letter-spacing: .3px;
-  text-shadow: 0 4px 18px rgba(255, 166, 158, .35);
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #2f1c0e;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
 }
 </style>

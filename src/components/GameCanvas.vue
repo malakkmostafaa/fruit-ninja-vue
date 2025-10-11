@@ -56,6 +56,7 @@ import { useStore } from "vuex";
 import confetti from "canvas-confetti";
 
 const store = useStore();
+const emojiIcons = ref(["🍎","🍊","🍉","🍌","🍓","🍒","🍍"]);
 const fruits = computed(() => store.state.fruits);
 const bombs = computed(() => store.state.bombs);
 const level = computed(() => store.state.level);
@@ -285,6 +286,18 @@ function activateSlowMotion() {
 }
 
 onMounted(() => {
+    // 🛰️ Simple API fetch for emoji icons
+fetch('/emojis.json')
+  .then(r => r.json())
+  .then(data => {
+    if (Array.isArray(data.icons) && data.icons.length) {
+      emojiIcons.value = data.icons;
+    }
+  })
+  .catch(() => {
+    // if fetch fails, fallback icons stay
+  });
+
   startLevel();
   window.addEventListener("mousemove", (e) => {
     const rect = document.querySelector(".game-canvas").getBoundingClientRect();
@@ -306,86 +319,143 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
 }
+
+/* lacquered level pill */
 .level-banner {
-  background: conic-gradient(from 120deg, #00cec9, #0984e3 40%, #00cec9 80%);
-  color: #fff;
-  padding: 10px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+  color: #23180f;
+  padding: 8px 20px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 1.05rem;
-  box-shadow: 0 10px 24px rgba(9,132,227,.25);
+  box-shadow: 0 14px 30px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.35);
 }
+
+/* >>> Cutting board background <<< */
 .game-canvas {
   position: relative;
   width: 800px;
   height: 600px;
-  background: radial-gradient(900px 600px at 20% -10%, rgba(9,132,227,.14), transparent 60%),
-              radial-gradient(800px 500px at 120% 110%, rgba(0,206,201,.13), transparent 60%),
-              linear-gradient(180deg, #141821, #0f141c 55%, #0b1018);
-  border-radius: 20px;
+
+  /* ✅ Correct public path */
+  background-image: url('/desktop-wallpaper-fruit-ninja.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 4px solid #4b2e05;
+  border-radius: 18px;
   overflow: hidden;
   cursor: none;
   user-select: none;
-  box-shadow: 0 24px 50px rgba(0,0,0,.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
-.game-canvas.slowmo {
-  box-shadow: 0 0 50px 10px rgba(0,206,201,.8);
-  filter: brightness(1.2);
-}
-.slowmo-text {
+
+/* --- VIGNETTE / BEVEL SHADOW --- */
+.game-canvas::after {
+  content: "";
   position: absolute;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 2rem;
-  color: #74b9ff;
-  font-weight: 700;
-  text-shadow: 0 0 10px #00cec9;
-  animation: pulseText 1s infinite;
-  z-index: 10;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 50%, transparent 58%, rgba(0, 0, 0, .45));
 }
 @keyframes pulseText { 50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); } }
 
+/* Fruits and bombs */
 .fruit, .bomb {
   position: absolute;
   font-size: 2.6rem;
   transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
   transition: transform .05s linear;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.35));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .35));
   z-index: 2;
 }
-.fruit[data-type="slow"] {
-  filter: drop-shadow(0 0 10px #74b9ff) drop-shadow(0 0 20px #00cec9);
-  animation: glowBlue 1.2s ease-in-out infinite;
+
+.fruit {
+  animation: wob .95s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(255,255,255,.2), 0 0 8px rgba(255,120,60,.18);
 }
-@keyframes glowBlue { 50% { transform: translate(-50%,-50%) scale(1.1); } }
-.fruit[data-type="life"] {
-  filter: drop-shadow(0 0 10px #ffeaa7) drop-shadow(0 0 20px #fdcb6e);
-  animation: glowGold 1.2s ease-in-out infinite;
+
+@keyframes wob { 0%,100%{ --rot:-5deg } 50%{ --rot:5deg } }
+
+.bomb {
+  animation: pulse 1.1s ease-in-out infinite;
+  text-shadow: 0 0 14px rgba(255,77,109,.55), 0 0 26px rgba(255,77,109,.35);
 }
-@keyframes glowGold { 50% { transform: translate(-50%,-50%) scale(1.1); } }
-.cursor-blade {
+
+@keyframes pulse {
+  0%,100% { transform: translate(-50%,-50%) scale(1) }
+  50% { transform: translate(-50%,-50%) scale(1.06) }
+}
+
+/* Soft shadow */
+.fruit::after, .bomb::after {
+  content: "";
   position: absolute;
-  width: 28px;
-  height: 28px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(255,255,255,.95), rgba(129,236,236,.45) 60%);
-  border-radius: 50%;
-  mix-blend-mode: screen;
-  box-shadow: 0 0 18px rgba(0,206,201,.9);
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 14px;
+  transform: translate(-50%, calc(50% + 22px));
+  background: radial-gradient(closest-side, rgba(0,0,0,.45), transparent 70%);
+  filter: blur(2px);
+  opacity: .32;
   pointer-events: none;
 }
+
+/* Overlay */
 .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.55);
   display: grid;
   place-items: center;
-  color: white;
-  font-size: 1.8rem;
   z-index: 3;
+  color: #1c140e;
+  background:
+    radial-gradient(700px 500px at 50% 30%, rgba(255,160,80,.15), transparent 60%),
+    rgba(0,0,0,.55);
+  backdrop-filter: blur(6px) saturate(1.05);
+  font-size: 1.8rem;
+  animation: fadeIn .35s ease;
 }
-.overlay h2 {
-  color: #ffeaa7;
-  text-shadow: 0 0 10px #fdcb6e, 0 0 20px #fab1a0;
+
+.overlay > * {
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  border: 1px solid rgba(0,0,0,.16);
+  padding: 18px 28px;
+  border-radius: 16px;
+  box-shadow: 0 22px 50px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.2);
 }
+
+.overlay button {
+  background: linear-gradient(180deg, #39c46f, #2aa85d);
+  color: #0b0f14;
+  font-weight: 800;
+  border: 0;
+  padding: .85rem 1.6rem;
+  border-radius: 12px;
+  margin-top: 12px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(42,168,93,.35), inset 0 0 0 1px rgba(0,0,0,.25);
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.overlay button:hover { transform: translateY(-1px); filter: saturate(1.06); }
+.overlay button:active { transform: translateY(1px); }
+
+.cursor-blade {
+  position: absolute;
+  z-index: 4;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.7);
+  background: radial-gradient(circle at 55% 45%, rgba(255,255,255,.95), rgba(255,255,255,.55) 35%, rgba(120,180,255,.45) 60%, transparent 72%);
+  mix-blend-mode: screen;
+  box-shadow: 0 0 22px rgba(220,240,255,.7), 0 0 44px rgba(180,210,255,.35);
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
