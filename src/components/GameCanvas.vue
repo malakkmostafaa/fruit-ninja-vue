@@ -8,6 +8,7 @@
         v-for="fruit in fruits"
         :key="fruit.id"
         class="fruit"
+        :data-type="fruit.type"
         :style="{ left: fruit.x + 'px', top: fruit.y + 'px' }"
       >
         {{ fruit.icon }}
@@ -24,14 +25,24 @@
       </div>
 
       <!-- Level Complete Overlay -->
-      <div v-if="levelComplete && !gameOver" class="overlay">
+      <div v-if="levelComplete && !gameOver && !gameWon" class="overlay">
         <h2>🎯 Level {{ level }} Complete!</h2>
         <button @click="nextLevel">Next Level ▶</button>
       </div>
 
+      <!-- Game Won Overlay -->
+      <div v-if="gameWon" class="overlay">
+        <h2>🏆 You Won the Game!</h2>
+        <p>Your Final Score: {{ score }}</p>
+        <button @click="restartGame">Play Again 🔁</button>
+      </div>
+
+      <!-- Slow motion text -->
+      <div v-if="slowMotionActive" class="slowmo-text">⚡ Slow Motion Active!</div>
+
       <!-- Custom Cursor -->
       <div
-        v-show="!gameOver"
+        v-show="!gameOver && !gameWon"
         class="cursor-blade"
         :style="{ left: cursorX + 'px', top: cursorY + 'px' }"
       ></div>
@@ -42,6 +53,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useStore } from "vuex";
+import confetti from "canvas-confetti";
 
 const store = useStore();
 const emojiIcons = ref(["🍎","🍊","🍉","🍌","🍓","🍒","🍍"]);
@@ -50,21 +62,19 @@ const bombs = computed(() => store.state.bombs);
 const level = computed(() => store.state.level);
 const score = computed(() => store.state.score);
 const gameOver = computed(() => store.state.gameOver);
+const gameWon = computed(() => store.state.gameWon);
 
 let physicsLoop, spawnLoop;
 const levelComplete = ref(false);
+const slowMotionActive = ref(false);
 
-// 🖱️ Custom Cursor
 const cursorX = ref(0);
 const cursorY = ref(0);
 
-// ==============================
-// Level Configurations
-// ==============================
 const LEVEL_CONFIG = {
   1: { fruitSpeed: 8, gravity: 0.35, spawnRate: 1100, target: 100, bombs: false },
-  2: { fruitSpeed: 8, gravity: 0.35, spawnRate: 950, target: 250, bombs: true },
-  3: { fruitSpeed: 8, gravity: 0.35, spawnRate: 800, target: 400, bombs: true },
+  2: { fruitSpeed: 10, gravity: 0.36, spawnRate: 950, target: 250, bombs: true },
+  3: { fruitSpeed: 12, gravity: 0.38, spawnRate: 700, target: 300, bombs: true },
 };
 
 function getLevelSettings() {
@@ -93,7 +103,7 @@ function updatePositions() {
     }
   }
 
-  // 🎯 Level completion check
+  // 🎯 Level complete
   if (score.value >= getLevelSettings().target && store.state.level <= 3) {
     levelComplete.value = true;
     clearInterval(spawnLoop);
@@ -109,15 +119,19 @@ function handleClick(event) {
   const y = event.clientY - rect.top;
   const HITBOX = 80;
 
-  // Fruits
   for (const fruit of [...fruits.value]) {
     if (Math.abs(fruit.x - x) < HITBOX && Math.abs(fruit.y - y) < HITBOX) {
+      // sliceFruit handles scoring (+10)
       store.commit("sliceFruit", fruit.id);
+
+      if (store.state.level === 3) {
+        if (fruit.type === "slow") activateSlowMotion();
+        else if (fruit.type === "life") store.state.lives++;
+      }
       return;
     }
   }
 
-  // Bombs
   for (const bomb of [...bombs.value]) {
     if (Math.abs(bomb.x - x) < HITBOX && Math.abs(bomb.y - y) < HITBOX) {
       store.commit("sliceBomb", bomb.id);
@@ -127,45 +141,57 @@ function handleClick(event) {
 }
 
 // ==============================
+// Restart Logic
+// ==============================
+function restartGame() {
+  clearInterval(spawnLoop);
+  clearInterval(physicsLoop);
+  store.commit("resetGame");
+  store.state.gameWon = false;
+  startLevel();
+}
+
+// ==============================
 // Spawn Logic
 // ==============================
 function spawnFruit() {
   const { gravity } = getLevelSettings();
   const id = ++store.state.fruitIdCounter;
-
-  // Canvas width (same as .game-canvas)
   const canvasWidth = 800;
   const canvasHeight = 600;
 
-  // Random horizontal start position
   const x = 80 + Math.random() * (canvasWidth - 160);
-  const y = canvasHeight - 20; // start near bottom
-  const vx = (Math.random() - 0.5) * 3; // slight sideways movement
+  const y = canvasHeight - 20;
+  const vx = (Math.random() - 0.5) * 3;
+  const desiredHeight = canvasHeight - 100;
+  let vy = -Math.sqrt(2 * gravity * desiredHeight) - Math.random() * 2;
 
-  // 🎯 Calculate upward velocity so fruit reaches the top (y = 0)
-  // vy = -√(2 * gravity * desiredHeight)
-  const desiredHeight = canvasHeight - 100; // reach near top but not offscreen
-  const vy = -Math.sqrt(2 * gravity * desiredHeight);
+  let icon = "🍎";
+  let type = "normal";
 
-  // Add small random variation so not all fly identically
-  const vyVariation = vy - Math.random() * 2;
+  if (store.state.level === 3) {
+    const roll = Math.random();
+    if (roll < 0.15) {
+      icon = "💙";
+      type = "slow";
+    } else if (roll < 0.30) {
+      icon = "💛";
+      type = "life";
+    } else {
+      const icons = ["🍎", "🍊", "🍉", "🍌", "🍓", "🍒", "🍍"];
+      icon = icons[Math.floor(Math.random() * icons.length)];
+    }
+    if (type !== "normal") vy *= 0.8;
+  } else {
+    const icons = ["🍎", "🍊", "🍉", "🍌", "🍓", "🍒", "🍍"];
+    icon = icons[Math.floor(Math.random() * icons.length)];
+  }
 
-  const icons = emojiIcons.value;
-  const icon = icons[Math.floor(Math.random() * icons.length)];
-
-  store.state.fruits.push({
-    id,
-    x,
-    y,
-    vx,
-    vy: vyVariation, // slightly randomized upward speed
-    icon,
-  });
+  store.state.fruits.push({ id, x, y, vx, vy, icon, type });
 }
 
-
 function spawnBomb() {
-  if (!getLevelSettings().bombs) return; // ❌ No bombs in level 1
+  if (!getLevelSettings().bombs) return;
   const { gravity } = getLevelSettings();
   const id = ++store.state.bombIdCounter;
 
@@ -173,22 +199,13 @@ function spawnBomb() {
   const canvasHeight = 600;
 
   const x = 80 + Math.random() * (canvasWidth - 160);
-  const y = canvasHeight - 20; // same start as fruits
+  const y = canvasHeight - 20;
   const vx = (Math.random() - 0.5) * 3;
-
-  // 🚀 Match fruit arc height: use same gravity formula as fruits
   const desiredHeight = canvasHeight - 100;
   const vy = -Math.sqrt(2 * gravity * desiredHeight) - Math.random() * 1.5;
 
-  store.state.bombs.push({
-    id,
-    x,
-    y,
-    vx,
-    vy,
-  });
+  store.state.bombs.push({ id, x, y, vx, vy });
 }
-
 
 // ==============================
 // Level Flow
@@ -211,13 +228,61 @@ function startLevel() {
 function nextLevel() {
   clearInterval(spawnLoop);
   clearInterval(physicsLoop);
+
   if (store.state.level < 3) {
     store.commit("nextLevel");
     startLevel();
   } else {
     levelComplete.value = false;
-    store.commit("resetGame");
+    store.state.gameWon = true;
+
+    const duration = 2500;
+    const end = Date.now() + duration;
+    (function frame() {
+      confetti({
+        particleCount: 8,
+        startVelocity: 30,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#00cec9", "#74b9ff", "#ffeaa7", "#fab1a0"],
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
   }
+}
+
+// ==============================
+// Slow Motion Effect
+// ==============================
+function activateSlowMotion() {
+  slowMotionActive.value = true;
+  document.querySelector(".game-canvas").classList.add("slowmo");
+
+  const { gravity, spawnRate } = getLevelSettings();
+  const originalGravity = gravity;
+  const originalSpawnRate = spawnRate;
+
+  LEVEL_CONFIG[3].gravity = gravity * 0.4;
+  clearInterval(spawnLoop);
+  spawnLoop = setInterval(() => {
+    if (!store.state.gameOver && !levelComplete.value) {
+      if (Math.random() < 0.9) spawnFruit();
+      else spawnBomb();
+    }
+  }, originalSpawnRate * 1.8);
+
+  setTimeout(() => {
+    LEVEL_CONFIG[3].gravity = originalGravity;
+    document.querySelector(".game-canvas").classList.remove("slowmo");
+    slowMotionActive.value = false;
+    clearInterval(spawnLoop);
+    spawnLoop = setInterval(() => {
+      if (!store.state.gameOver && !levelComplete.value) {
+        if (Math.random() < 0.9) spawnFruit();
+        else spawnBomb();
+      }
+    }, originalSpawnRate);
+  }, 5000);
 }
 
 onMounted(() => {
@@ -234,8 +299,6 @@ fetch('/emojis.json')
   });
 
   startLevel();
-
-  // 🖱️ Track cursor position for blade effect
   window.addEventListener("mousemove", (e) => {
     const rect = document.querySelector(".game-canvas").getBoundingClientRect();
     cursorX.value = e.clientX - rect.left - 20;
@@ -295,6 +358,7 @@ onUnmounted(() => {
   pointer-events: none;
   background: radial-gradient(120% 80% at 50% 50%, transparent 58%, rgba(0, 0, 0, .45));
 }
+@keyframes pulseText { 50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); } }
 
 /* Fruits and bombs */
 .fruit, .bomb {

@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="app-container">
-    <h1 class="title">🍉 Fruit Ninja Vue 🍌</h1>
+    
 
     <LevelSelector v-if="!gameStarted" />
     <div v-else-if="!gameOver">
