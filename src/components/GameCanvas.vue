@@ -24,28 +24,30 @@
         💣
       </div>
 
-      <!-- Level Complete Overlay -->
-      <div v-if="levelComplete && !gameOver && !gameWon" class="overlay">
-        <h2>🎯 Level {{ level }} Complete!</h2>
-        <button @click="nextLevel">Next Level ▶</button>
-      </div>
 
-      <!-- Game Won Overlay -->
+      <!-- Winning Overlay -->
       <div v-if="gameWon" class="overlay">
         <h2>🏆 You Won the Game!</h2>
         <p>Your Final Score: {{ score }}</p>
         <button @click="restartGame">Play Again 🔁</button>
       </div>
 
-      <!-- Slow motion text -->
-      <div v-if="slowMotionActive" class="slowmo-text">⚡ Slow Motion Active!</div>
+      <!--Level Complete -->
+      <div v-else-if="levelComplete && !gameOver" class="overlay">
+        <h2>🎯 Level {{ level }} Complete!</h2>
+        <button @click="nextLevel">Next Level ▶</button>
+      </div>
 
-      <!-- Custom Cursor -->
+
+      <div v-if="slowMotionActive" class="slowmo-text cinematic">⚡ SLOW MOTION ⚡</div>
+
       <div
         v-show="!gameOver && !gameWon"
         class="cursor-blade"
         :style="{ left: cursorX + 'px', top: cursorY + 'px' }"
-      ></div>
+      >
+        🔪
+      </div>
     </div>
   </div>
 </template>
@@ -115,9 +117,15 @@ function updatePositions() {
 // ==============================
 function handleClick(event) {
   const rect = event.currentTarget.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const x = event.clientX - rect.left - 20;
+  const y = event.clientY - rect.top - 20;
   const HITBOX = 80;
+  const blade = document.querySelector(".cursor-blade");
+  if (blade) {
+    blade.classList.add("active");
+    clearTimeout(blade._timeout);
+    blade._timeout = setTimeout(() => blade.classList.remove("active"), 80);
+  }
 
   for (const fruit of [...fruits.value]) {
     if (Math.abs(fruit.x - x) < HITBOX && Math.abs(fruit.y - y) < HITBOX) {
@@ -147,9 +155,9 @@ function restartGame() {
   clearInterval(spawnLoop);
   clearInterval(physicsLoop);
   store.commit("resetGame");
-  store.state.gameWon = false;
-  startLevel();
+  startLevel(); // no direct state mutation
 }
+
 
 // ==============================
 // Spawn Logic
@@ -322,14 +330,34 @@ onUnmounted(() => {
 
 /* lacquered level pill */
 .level-banner {
-  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
-  color: #23180f;
-  padding: 8px 20px;
+  display: inline-block;
+  margin: 0 auto 20px;
+  padding: 8px 24px;
   border-radius: 999px;
+
+  background: linear-gradient(180deg, rgba(0, 120, 60, 0.25), rgba(0, 60, 30, 0.25));
+  border: 1px solid rgba(0, 255, 120, 0.2);
+  box-shadow:
+    0 6px 14px rgba(0, 255, 140, 0.15),
+    inset 0 0 8px rgba(0, 255, 120, 0.08);
+
+  color: #baffcc;
   font-weight: 800;
-  font-size: 1.05rem;
-  box-shadow: 0 14px 30px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.35);
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  user-select: none;
+  animation: fadeIn 0.4s ease;
 }
+
+/* optional subtle glow animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 
 /* >>> Cutting board background <<< */
 .game-canvas {
@@ -446,16 +474,39 @@ onUnmounted(() => {
 .cursor-blade {
   position: absolute;
   z-index: 4;
-  width: 28px;
-  height: 28px;
+  font-size: 2.2rem; /* adjust knife size */
+  transform: translate(-50%, -50%) rotate(-45deg);
   pointer-events: none;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.7);
-  background: radial-gradient(circle at 55% 45%, rgba(255,255,255,.95), rgba(255,255,255,.55) 35%, rgba(120,180,255,.45) 60%, transparent 72%);
-  mix-blend-mode: screen;
-  box-shadow: 0 0 22px rgba(220,240,255,.7), 0 0 44px rgba(180,210,255,.35);
+  transition: transform 0.05s linear;
+  user-select: none;
+  text-shadow: 0 0 6px rgba(0,0,0,0.35);
+}
+.cursor-blade.active {
+  transform: translate(-50%, -50%) rotate(-25deg) scale(1.1);
 }
 
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.slowmo-text.cinematic {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 25px #ffdf6b, 0 0 50px #ffb400;
+  letter-spacing: 2px;
+  animation: cinematicInOut 5s ease-in-out;
+  z-index: 15;
+}
+
+@keyframes cinematicInOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) blur(3px); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9) blur(2px); }
+}
+
 </style>

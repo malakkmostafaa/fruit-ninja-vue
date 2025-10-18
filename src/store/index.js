@@ -2,25 +2,19 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state: {
-    // === GAME STATE ===
     score: 0,
     lives: 3,
     level: 1,
-    timer: 60, // seconds
     gameOver: false,
     gameStarted: false,
     gameWon: false,
 
-
-    // === GAME OBJECTS ===
     fruits: [], // active fruits
     bombs: [],  // active bombs
     fruitIdCounter: 0,
     bombIdCounter: 0,
 
-    // === SETTINGS ===
     levelTargets: { 1: 100, 2: 250, 3: 400 },
-    levelTimers: { 1: 60, 2: 45, 3: 40 },
   },
 
   getters: {
@@ -39,23 +33,12 @@ export default createStore({
       state.score = 0
       state.lives = 3
       state.level = 1
-      state.timer = state.levelTimers[1]
       state.fruits = []
       state.bombs = []
       state.gameWon = false;
     },
 
-    resetGame(state) {
-      state.score = 0
-      state.lives = 3
-      state.level = 1
-      state.timer = state.levelTimers[1]
-      state.fruits = []
-      state.bombs = []
-      state.gameOver = false
-      state.gameStarted = false
-      state.gameWon = false;
-    },
+   
 
     addScore(state, points) {
       state.score += points
@@ -69,22 +52,32 @@ export default createStore({
     },
 
 
+    resetGame(state) {
+      state.score = 0;
+      state.lives = 3;
+      state.level = 1;
+      state.fruits = [];
+      state.bombs = [];
+      state.gameOver = false;
+      state.gameStarted = true; // start right away after reset
+      state.gameWon = false;
+    },
+
     nextLevel(state) {
-  if (state.level < 3) {
-    state.level++;
-    if (state.level === 3) state.lives = 1; 
-    state.score = 0;
-    state.timer = state.levelTimers[state.level];
-    state.fruits = [];
-    state.bombs = [];
-  } else {
-    // 🎉 Player finished all levels
-    state.gameWon = true;
-    state.gameOver = false; // don't show game over
-  }
-},
-
-
+      if (state.level < 3) {
+        state.level++;
+        if (state.level === 3) state.lives = 1;
+        state.score = 0;
+        state.fruits = [];
+        state.bombs = [];
+        state.gameOver = false;
+        state.gameWon = false;
+      } else {
+        // 🎉 Player finished all levels
+        state.gameWon = true;
+        state.gameOver = false; // prevent flicker
+      }
+    },
   
     spawnFruit(state) {
       const id = ++state.fruitIdCounter
@@ -121,15 +114,7 @@ export default createStore({
       state.gameOver = true
     },
 
-    // === TIMER ===
-    decrementTimer(state) {
-      if (state.timer > 0) {
-        state.timer--
-      } else if (state.score < state.levelTargets[state.level]) {
-        state.gameOver = true
-      }
-    }
-  },
+    },
 
   actions: {
     // === GAME LOOP ACTIONS ===
@@ -144,11 +129,7 @@ export default createStore({
         else commit('spawnBomb')
       }, 1500)
 
-      // timer countdown
-      const timerInterval = setInterval(() => {
-        if (state.gameOver) return clearInterval(timerInterval)
-        commit('decrementTimer')
-      }, 1000)
+    
     },
   },
 })

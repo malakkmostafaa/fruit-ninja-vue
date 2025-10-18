@@ -1,45 +1,56 @@
 <template>
   <div id="app" class="app-container">
-    
-
     <LevelSelector v-if="!gameStarted" />
-    <div v-else-if="!gameOver">
+
+    <div v-else-if="!gameOver" class="game-layout">
       <ScoreBoard />
       <GameCanvas />
     </div>
+
     <GameOver v-else />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useStore } from 'vuex'
-import LevelSelector from './components/LevelSelector.vue'
-import ScoreBoard from './components/ScoreBoard.vue'
-import GameCanvas from './components/GameCanvas.vue'
-import GameOver from './components/GameOver.vue'
+import { computed } from "vue";
+import { useStore } from "vuex";
+import LevelSelector from "./components/LevelSelector.vue";
+import ScoreBoard from "./components/ScoreBoard.vue";
+import GameCanvas from "./components/GameCanvas.vue";
+import GameOver from "./components/GameOver.vue";
 
-const store = useStore()
-const gameStarted = computed(() => store.state.gameStarted)
-const gameOver = computed(() => store.state.gameOver)
+const store = useStore();
+const gameStarted = computed(() => store.state.gameStarted);
+const gameOver = computed(() => store.state.gameOver);
 </script>
 
-<style scoped>
+<style>
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(180deg, #012b18, #024f2e, #046940);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  font-family: 'Trebuchet MS', sans-serif;
+}
+
 .app-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  text-align: center;
-  background: linear-gradient(to bottom, #fff6e5, #ffeae0);
-  padding: 2rem;
+  min-height: 100vh;
 }
-.title {
-  font-size: 2.2rem;
-  font-weight: bold;
-  color: #2f1c0e;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
-  margin-bottom: 1rem;
+
+.game-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
 }
 </style>
