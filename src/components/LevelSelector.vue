@@ -1,143 +1,195 @@
 <template>
   <div class="start-screen">
-    <div class="overlay"></div>
+    <div class="bg-glow"></div>
 
-    <!-- Game Logo -->
     <div class="logo-container">
-      <img src="/fruit-logo.png" alt="Fruit Ninja Logo" class="game-logo" />
+      <img src="/ninja.png" alt="Fruit Ninja Logo" class="game-logo" />
     </div>
 
-    <!-- Pineapple Split Button -->
-    <div class="pineapple-container" @click="startGame">
-      <div class="pineapple">
-        <img src="/pineapple-right.png" alt="Left Half" class="pineapple-left" />
-        <img src="/pineapple-left.png" alt="Right Half" class="pineapple-right" />
+    <div class="button-container">
+      <div class="start-btn" @click="startGame">
+        <span class="btn-text">START GAME</span>
+       
       </div>
-      <span class="start-text">Start Game ▶</span>
+
+      <div class="inst-btn" @click="showInstructions">
+        <span class="inst-text">INSTRUCTIONS</span>
+      </div>
+    </div>
+
+    <!-- Instructions modal -->
+    <div v-if="instructionsVisible" class="modal-overlay" @click="closeInstructions">
+      <div class="modal-card" @click.stop>
+        <h2>🎯 How to Play</h2>
+        <ul>
+          <li>🖱️ Click fruits before they fall to slice them!</li>
+          <li>💣 Avoid clicking bombs — they end the game.</li>
+          <li>💙 Special fruits grant slow motion or extra lives.</li>
+          <li>🏆 Reach the target score to complete each level.</li>
+        </ul>
+        <button @click="closeInstructions">Got it!</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useStore } from 'vuex'
-const store = useStore()
+import { ref } from "vue";
+import { useStore } from "vuex";
+const store = useStore();
+const instructionsVisible = ref(false);
 
 function startGame() {
-  store.dispatch('startLevel')
+  store.dispatch("startLevel");
+}
+function showInstructions() {
+  instructionsVisible.value = true;
+}
+function closeInstructions() {
+  instructionsVisible.value = false;
 }
 </script>
 
 <style scoped>
+
 .start-screen {
   position: relative;
   width: 100%;
   height: 100vh;
-  background: url('/fruit-bg.png') center/cover no-repeat;
+  background: linear-gradient(135deg, #012b18, #024f2e, #046940);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  overflow: hidden;
+  align-items: center;
 }
 
-.overlay {
+.bg-glow {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: linear-gradient(120deg, rgba(0,255,170,0.15), rgba(0,100,40,0.25), rgba(0,255,180,0.1));
+  background-size: 300% 300%;
+  animation: bgFlow 8s ease-in-out infinite;
   z-index: 0;
+}
+@keyframes bgFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .logo-container {
   z-index: 1;
   text-align: center;
   margin-bottom: 3rem;
+  animation: float 3s ease-in-out infinite;
 }
 .game-logo {
-  width: 450px;
+  width: 420px;
   height: auto;
-  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.6));
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-/* === Pineapple Split Animation === */
-.pineapple-container {
-  position: relative;
-  cursor: pointer;
-  z-index: 2;
+.button-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1.2rem;
+  z-index: 2;
 }
 
-.pineapple {
+.start-btn {
   position: relative;
-  width: 180px;
-  height: 180px;
-  transition: all 0.4s ease;
+  cursor: pointer;
+  padding: 1rem 3rem;
+  background: linear-gradient(180deg, #39ff90, #22c55e);
+  border-radius: 50px;
+  box-shadow: 0 10px 25px rgba(0,255,150,0.4),
+              inset 0 0 0 2px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+}
+.start-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(0,255,150,0.6);
+}
+.start-btn:active { transform: translateY(1px) scale(0.98); }
+.btn-text {
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: #03160a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(255,255,255,0.5);
 }
 
-.pineapple-left,
-.pineapple-right {
-  position: absolute;
-  top: 0;
-  width: 50%;
-  height: 100%;
-  transform: scaleX(-1);
-  transition: all 0.6s ease;
- 
+.start-btn:hover .btn-spark { left: 110%; }
+
+.inst-btn {
+  cursor: pointer;
+  border: 2px solid #00ff88;
+  border-radius: 50px;
+  padding: 0.8rem 2.4rem;
+  background: rgba(0,255,120,0.05);
+  color: #00ffb0;
+  font-weight: 700;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+.inst-btn:hover {
+  background: rgba(0,255,120,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0,255,100,0.4);
 }
 
-/* Tighter alignment — halves now touch */
-.pineapple-left {
-  left: 0;
-  transform-origin: right center;
-  transform: scaleX(-1);
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+.modal-card {
+  background: linear-gradient(180deg, #04351c, #01220f);
+  padding: 2rem 2.5rem;
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+  color: #ccfcd8;
+  width: 420px;
+  text-align: center;
+  border: 1px solid rgba(0,255,100,0.2);
+}
+.modal-card h2 { margin-bottom: 1rem; color: #76ffb4; }
+.modal-card ul {
+  text-align: left;
+  margin: 0 0 1.5rem;
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+.modal-card button {
+  background: linear-gradient(180deg, #39ff90, #22c55e);
+  border: none;
+  padding: 0.6rem 1.4rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #05250f;
+  transition: all 0.2s ease;
+}
+.modal-card button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
-.pineapple-right {
-  right: 0;
-  transform-origin: left center;
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
-
-
-/* Hidden Start Text initially */
-.start-text {
-  position: absolute;
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #fff;
-  opacity: 0;
-  transform: scale(0.9);
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  transition: all 0.4s ease;
-  z-index: 3;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-}
-
-/* Hover effect — splits open + reveals text */
-.pineapple-container:hover .pineapple-left {
-  transform: rotate(-20deg) translateX(100px);
-}
-.pineapple-container:hover .pineapple-right {
-  transform: rotate(20deg) translateX(-100px);
-}
-.pineapple-container:hover .start-text {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-/* Small bounce */
-.pineapple-container:hover .pineapple {
-  animation: bounce 0.8s ease;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-button:hover{ transform: translateY(-1px); filter:saturate(1.06) }
-button:active{ transform: translateY(1px) }
 </style>
-
-
