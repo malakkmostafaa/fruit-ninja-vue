@@ -32,11 +32,13 @@
         <button @click="restartGame">Play Again 🔁</button>
       </div>
 
-      <!--Level Complete -->
-      <div v-else-if="levelComplete && !gameOver" class="overlay">
-        <h2>🎯 Level {{ level }} Complete!</h2>
-        <button @click="nextLevel">Next Level ▶</button>
-      </div>
+<!--Level Complete -->
+<div v-else-if="levelComplete && !gameOver" class="overlay">
+  <h2>🎯 Level {{ level }} Complete!</h2>
+  <button v-if="level < 3" @click="nextLevel">Next Level ▶</button>
+  <button v-else @click="nextLevel">Finish ▶</button>
+</div>
+
 
 
       <div v-if="slowMotionActive" class="slowmo-text cinematic">⚡ SLOW MOTION ⚡</div>
@@ -56,6 +58,8 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useStore } from "vuex";
 import confetti from "canvas-confetti";
+import { sfx } from "../game/audio";
+
 
 const store = useStore();
 const emojiIcons = ref(["🍎","🍊","🍉","🍌","🍓","🍒","🍍"]);
@@ -129,6 +133,8 @@ function handleClick(event) {
 
   for (const fruit of [...fruits.value]) {
     if (Math.abs(fruit.x - x) < HITBOX && Math.abs(fruit.y - y) < HITBOX) {
+      sfx.slice.play();                    // 🔊 slice sound
+      navigator.vibrate?.(40);
       // sliceFruit handles scoring (+10)
       store.commit("sliceFruit", fruit.id);
 
@@ -141,7 +147,7 @@ function handleClick(event) {
   }
 
   for (const bomb of [...bombs.value]) {
-    if (Math.abs(bomb.x - x) < HITBOX && Math.abs(bomb.y - y) < HITBOX) {
+    if (Math.abs(bomb.x - x) < HITBOX && Math.abs(bomb.y - y) < HITBOX) { 
       store.commit("sliceBomb", bomb.id);
       return;
     }
@@ -243,6 +249,9 @@ function nextLevel() {
   } else {
     levelComplete.value = false;
     store.state.gameWon = true;
+
+    sfx.win.play();
+    navigator.vibrate?.(120);
 
     const duration = 2500;
     const end = Date.now() + duration;
