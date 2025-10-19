@@ -16,6 +16,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
+import { sfx } from '../game/audio'
 
 const store = useStore()
 const score = computed(() => store.state.score)
@@ -26,49 +27,16 @@ function restart() {
   store.commit('resetGame')
 }
 
-function playOutcome() {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext
-  if (!AudioCtx) return
-  const ctx = new AudioCtx()
-  if (won.value) playWin(ctx)
-  else playLose(ctx)
-}
 
-function beep(ctx, freq, t0, dur = 0.25, type = 'sine', peak = 0.3) {
-  const o = ctx.createOscillator()
-  const g = ctx.createGain()
-  o.type = type
-  o.frequency.value = freq
-  o.connect(g)
-  g.connect(ctx.destination)
-  g.gain.setValueAtTime(0.0001, t0)
-  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.02)
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
-  o.start(t0)
-  o.stop(t0 + dur + 0.02)
-}
-
-function playWin(ctx) {
-  const now = ctx.currentTime
-  beep(ctx, 523.25, now + 0.00, 0.22)
-  beep(ctx, 659.25, now + 0.12, 0.22)
-  beep(ctx, 783.99, now + 0.24, 0.26)
-}
-function playLose(ctx) {
-  const now = ctx.currentTime
-  const o = ctx.createOscillator()
-  const g = ctx.createGain()
-  o.type = 'sawtooth'
-  o.connect(g); g.connect(ctx.destination)
-  g.gain.setValueAtTime(0.0001, now)
-  g.gain.exponentialRampToValueAtTime(0.35, now + 0.02)
-  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.45)
-  o.frequency.setValueAtTime(200, now)
-  o.frequency.exponentialRampToValueAtTime(80, now + 0.4)
-  o.start(now); o.stop(now + 0.5)
-}
-
-onMounted(playOutcome)
+onMounted(() => {
+  if (won.value) {
+    sfx.win.play()
+    navigator.vibrate?.(120)
+  } else {
+    sfx.lose.play()
+    navigator.vibrate?.([60, 40, 120])
+  }
+})
 </script>
 
 <style scoped>
