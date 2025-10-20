@@ -183,6 +183,11 @@ function spawnFruit() {
   let icon = "🍎";
   let type = "normal";
 
+  // 🎯 Choose icons dynamically from fetched emoji list
+  const icons = emojiIcons.value.length
+    ? emojiIcons.value
+    : ["🍎","🍊","🍉","🍌","🍓","🍒","🍍"]; // fallback if fetch fails
+
   if (store.state.level === 3) {
     const roll = Math.random();
     if (roll < 0.15) {
@@ -192,17 +197,16 @@ function spawnFruit() {
       icon = "💛";
       type = "life";
     } else {
-      const icons = ["🍎", "🍊", "🍉", "🍌", "🍓", "🍒", "🍍"];
       icon = icons[Math.floor(Math.random() * icons.length)];
     }
     if (type !== "normal") vy *= 0.8;
   } else {
-    const icons = ["🍎", "🍊", "🍉", "🍌", "🍓", "🍒", "🍍"];
     icon = icons[Math.floor(Math.random() * icons.length)];
   }
 
   store.state.fruits.push({ id, x, y, vx, vy, icon, type });
 }
+
 
 function spawnBomb() {
   if (!getLevelSettings().bombs) return;
